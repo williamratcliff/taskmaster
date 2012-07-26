@@ -44,7 +44,7 @@ Ext.onReady(function () {
             {name:'DateStarted', type:'string'},
             {name:'TimeStarted', type:'string'},
             {name:'DateDue', type: 'string'},
-            {name:'Status', type:'string'},
+            {name:'Status', type:'string'}
         ]
     });
 
@@ -111,7 +111,8 @@ Ext.onReady(function () {
         increment: 30,
         minValue: '6:00 AM',
         maxValue: '8:00 PM',
-        renderer: Ext.util.Format.dateRenderer('H:i A'),
+        format: 'g:i A',
+        renderer: Ext.util.Format.dateRenderer('g:i A'),
         allowBlank: false
     }});
     gridColumns.push({header:'Due Date', width:120, sortable:true, dataIndex:'DateDue', editor: {
@@ -136,9 +137,16 @@ Ext.onReady(function () {
     taskMaster.grid = new Ext.grid.GridPanel({
         store:store,
         columns:gridColumns,
+
         stripeRows:true,
         height:350,
         width:950,
+//        selType: 'rowmodel',
+//        plugins: [
+//            Ext.create('Ext.grid.plugin.RowEditing', {
+//                clicksToEdit: 1
+//            })
+//        ],
         plugins: [cellEditing],
         title:'Task Master',
         collapsible: false,
