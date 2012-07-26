@@ -147,129 +147,54 @@ Ext.onReady(function () {
     });
 
 
-    var button =  new Ext.Button({applyTo:'button-div',text:'Submit!', minWidth: 130, handler: submitHandler});
+    var button =  new Ext.Button({applyTo:'button-div',text:'Submit!', minWidth: 130, handler: taskMaster.submitHandler});
     var conn = new Ext.data.Connection();
 
+
+    //if our message to the server is successful, we will wish to take actions....
     taskMaster.successFunction = function(response) {
         var idealdata = Ext.decode(response);
-        var h = idealdata[0];
-        var k = idealdata[1];
-        var l = idealdata[2];
-        var f = idealdata[3];
-        structureFactors.resultPanel.store.data.items[0].data["h"] = h;
-        structureFactors.resultPanel.store.data.items[0].data["k"] = k;
-        structureFactors.resultPanel.store.data.items[0].data["l"] = l;
-        structureFactors.resultPanel.store.data.items[0].data["|F|"] = f;
-        structureFactors.resultPanel.getView().refresh();
-
-        //Updating desired data table
-        var counter = 0;
-        changes = ['twotheta', 'theta', 'omega', 'chi', 'phi'];
-        for (var i = 0; i < structureFactors.resultsStore.getCount(); i++){
-            var record = structureFactors.resultsStore.getAt(i);
-
-            if (record.data['h'] != 0 || record.data['k'] != 0 || record.data['l'] != 0){
-                //if it's not a (0,0,0) vector, update its calculated angles
-                if (idealdata[counter] === 'Error') {
-                    //setting up the error message
-                    record.set('twotheta', 'Invalid');
-                    record.set('theta', 'Vector!');
-                    record.set('omega', 'Not in');
-                    record.set('chi', 'Scattering');
-                    record.set('phi', 'Plane.');
-                }
-                else{
-                    for (var c in changes) {
-                        var fieldName = changes[c];
-                        record.set(fieldName, idealdata[counter][fieldName]);
-                    }
-
-                }
-                counter = counter+1;
-            }
-        }
-
-        //resultsStore.commitChanges();
     }
 
-    //function getVals(){
-    //    console.log('hi');
-    //    console.log(Ext.ComponentQuery.query('panel #latticeParameters')[0].items.items[0].items.items[0].name);
-    //    console.log(Ext.ComponentQuery.query('panel #latticeParameters')[0].items.items[0].items.items[0].value);
-    //    //keys gives a map of componentId to number
-    //}
 
-    function submitHandler(button, event) {
+    //how to get data over to the server
 
-        //var results=getVals();
+    taskMaster.submitHandler = function(button, event) {
 
 
-        params = {'observations': [] };
-        params.lattice=[];
-        params.element=[];
-        params.num=[];
+        params = {};  //setup our datastructure to send over the wire.  Make it an object in case we generalize later
+        params.tasks=[];
+        for (var i=0; i< taskMaster.grid.store.data.items.length; i++) {
+            var title = taskMaster.grid.store.data.items[i].data.Title;
+            var description = taskMaster.grid.store.data.items[i].data.Description;
+            var dateStarted = taskMaster.grid.store.data.items[i].data.DateStarted;
+            var timeStarted = taskMaster.grid.store.data.items[i].data.TimeStarted;
+            var dateDue = taskMaster.grid.store.data.items[i].data.DateDue;
+            var status = taskMaster.grid.store.data.items[i].data.Status;
 
-        var a = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetTop').query('textfield[name="a"]')[0].value;
-        var b = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetTop').query('textfield[name="b"]')[0].value;
-        var c = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetTop').query('textfield[name="c"]')[0].value;
-        var alpha = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetMiddle').query('textfield[name="alpha"]')[0].value;
-        var beta = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetMiddle').query('textfield[name="beta"]')[0].value;
-        var gamma = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetMiddle').query('textfield[name="gamma"]')[0].value;
-        params.lattice.push({
-            a:a,
-            b:b,
-            c:c,
-            alpha:alpha,
-            beta:beta,
-            gamma:gamma
-        });
-        var num = Ext.ComponentQuery.query('panel #latticeParameters')[0].getComponent('latticeFieldSetBottom').query('textfield[name="num"]')[0].value;
-        params.num.push({
-            num: num
-        });
-        for (var i=0; i<num; i++) {
 
-            var symbol = structureFactors.grid.store.data.items[i].data.Symbol;
-            var element = structureFactors.grid.store.data.items[i].data.Element;
-            //var wyckoff = structureFactors.grid.store.data.items[i].data.wycoffPosition;
-            var x = structureFactors.grid.store.data.items[i].data.X;
-            var y = structureFactors.grid.store.data.items[i].data.Y;
-            var z = structureFactors.grid.store.data.items[i].data.Z;
-            var occupancy = structureFactors.grid.store.data.items[i].data.Occupancy;
-            var B = structureFactors.grid.store.data.items[i].data.B;
-            params.element.push({
-                symbol:symbol,
-                element:element,
-                //wyckoff:wyckoff,
-                x:x,
-                y:y,
-                z:z,
-                occupancy:occupancy,
-                B:B
+            params.tasks.push({
+                title:title,
+                description:description,
+                dateStarted:dateStarted,
+                dateDue:DateDue,
+                status:status
             });
-        }
+        };
 
-
-
-        //only sends the observations that aren't (0,0,0)
-//        for (var i = 0; i < store.getCount(); i++) {
-//            var record = store.getAt(i)
-//            if (record.data['h'] != 0 || record.data['k'] != 0 || record.data['l'] != 0){
-//                params['data'].push(record.data);
-//            }
-//        };
+        //serialize the data in JSON format for transfer to the server.
         var data=Ext.JSON.encode(params);
         $.ajax({
-            url: '/nuclear_scattering',
+            url: '/rest_api',
             type: 'POST',
             data: {'data' : data},
-            success: function(response, a, b, c) {
-                //projectid is not in scope here; calling another function that has it.
-                structureFactors.successFunction(response);
+            success: function(response) {
+                taskMaster.successFunction(response);
             }
         });
     }
 
+    //Put our button and grid in a panel--simple layout for now....
     taskMaster.taskPanel = new Ext.Panel({
         layout: 'table',
         width: 1100,
@@ -280,7 +205,7 @@ Ext.onReady(function () {
     });
 
 
-
+    //put everything in a tabpanel and then render it
     var myTabs = new Ext.TabPanel({
         resizeTabs: true, // turn on tab resizing
         minTabWidth: 115,
@@ -307,6 +232,5 @@ Ext.onReady(function () {
         ]
     });
 
-// ************************** END - Setting up the tabs  **************************
     myTabs.render('tabs');
 });
