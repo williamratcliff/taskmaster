@@ -31,8 +31,9 @@ def home(request):
 @csrf_exempt
 def rest_api(request):
     context = RequestContext(request)
-    print "hi"
-    data = simplejson.loads(request.POST['data'])
-    results = calculateStructFact(data)
-    print results
+    #print "hi"
+    #data = simplejson.loads(request.POST['data'])
+    #results = calculateStructFact(data)
+    #print results
+    results={'success':True}
     return HttpResponse(simplejson.dumps(results))

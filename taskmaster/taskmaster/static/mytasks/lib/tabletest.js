@@ -9,6 +9,7 @@ Ext.Loader.setConfig({
 //Let the loader know where to look for this example module.  Use the CDN for speed
 
 Ext.Loader.setPath('Ext.ux', 'http://cdn.sencha.io/ext-4.1.1-gpl/examples/ux');
+//Ext.Loader.setPath('Ext.example', 'http://cdn.sencha.io/ext-4.1.1-gpl/examples');
 
 
 //To reduce load times, only bring in the portions of Ext that we actually need
@@ -43,9 +44,9 @@ Ext.onReady(function () {
             {name:'Name', type:'string'},
             {name:'Description', type:'string'},
             {name:'Priority', type:'string'},
-            {name:'DateStarted', type:'string'},
-            {name:'TimeStarted', type:'string'},
-            {name:'DateDue', type: 'string'},
+            {name:'DateStarted', type:'date'},
+            {name:'TimeStarted', type:'date'},
+            {name:'DateDue', type: 'date'},
             {name:'Status', type:'string'}
         ]
     });
@@ -58,7 +59,41 @@ Ext.onReady(function () {
 
     //Ext is a MVC framework for single page web apps.   It has the concept of data stores.   There can
     //be multiple views on the data...
-    var store = Ext.create('Ext.data.Store', { model:'taskModel', data: myData});
+    var store = Ext.create('Ext.data.Store', {
+            model:'taskModel',
+            data: myData,
+            autoLoad: true,
+            autoSync: true,
+            proxy: {
+                type: 'rest',
+                url: 'rest_api',
+                reader: {
+                    type: 'json',
+                    root: 'data'
+                },
+                writer: {
+                    type: 'json'
+                }
+            },
+            listeners: {
+                write: function(store, operation){
+                    var record = operation.getRecords()[0],
+                        name = Ext.String.capitalize(operation.action),
+                        verb;
+
+
+                    if (name == 'Destroy') {
+                        record = operation.records[0];
+                        verb = 'Destroyed';
+                    } else {
+                        verb = name + 'd';
+                    }
+                    Ext.example.msg(name, Ext.String.format("{0} user: {1}", verb, record.getId()));
+
+                }
+            }
+    }
+    );
 
     // for now, we'll edit our grid one cell at a time.  Later, we may experiment with row editing.
     var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
@@ -101,7 +136,9 @@ Ext.onReady(function () {
 
     gridColumns.push({header:'Start Date', width:120, sortable:true, dataIndex:'DateStarted', editor: {
         xtype: 'datefield',
-        allowBlank: false
+        allowBlank: false,
+        renderer: Ext.util.Format.dateRenderer('m d Y')
+        //format: 'm d Y'
     }});
 
     // Here, the time field actually will display a datetime rather than a time, so I use a renderer
@@ -171,7 +208,8 @@ Ext.onReady(function () {
                 icon: '/static/img/silk/add.png',
                 handler: function(){
                     // empty record
-                    store.insert(0, new taskModel());
+                    var currnum=taskMaster.grid.store.data.items.length
+                    store.insert(0, new taskModel({id: currnum+1}));
                     rowEditing.startEdit(0, 0);
                 }
             }, '-', {
