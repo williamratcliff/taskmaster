@@ -36,8 +36,10 @@ Ext.onReady(function () {
     Ext.namespace("taskMaster");
 
    //register a new model with ExtJs
-    Ext.regModel('taskModel', {
+    Ext.define('taskModel', {
+        extend: 'Ext.data.Model',
         fields:[
+            {name:'id', type: 'int',useNull: true},
             {name:'Name', type:'string'},
             {name:'Description', type:'string'},
             {name:'Priority', type:'string'},
@@ -50,7 +52,7 @@ Ext.onReady(function () {
 
     // Some sample data to populate our table
     var myData = [
-        ['Learn Javascript', 'I need to read, Javascript, the Good Parts', 'high' ,'','','','' ]
+        [1,'Learn Javascript', 'I need to read, Javascript, the Good Parts', 'high' ,'','','','' ]
     ];
 
 
@@ -63,9 +65,17 @@ Ext.onReady(function () {
         clicksToEdit: 1
     });
 
+    var rowEditing = Ext.create('Ext.grid.plugin.RowEditing', {
+        //clicksToEdit: 1
+    })
+
     //Let's setup the properties for our columns
     //dataIndex points to the field in our store that we will actually take data from.
     var gridColumns = [];
+
+    gridColumns.push({header:'Id', width:120, sortable:true, dataIndex:'id', editor: {
+        xtype: 'numberfield', hidden:true,
+        allowBlank: true}});
 
     gridColumns.push({header:'Name', width:120, sortable:true, dataIndex:'Name', editor: {
         xtype: 'textfield',
@@ -113,24 +123,27 @@ Ext.onReady(function () {
         maxValue: '8:00 PM',
         format: 'g:i A',
         renderer: Ext.util.Format.dateRenderer('g:i A'),
-        allowBlank: false
+        allowBlank: true
     }});
     gridColumns.push({header:'Due Date', width:120, sortable:true, dataIndex:'DateDue', editor: {
         xtype: 'datefield',
-        allowBlank: false,
+        allowBlank: true
     }});
     gridColumns.push({header:'Status', width:120, hidden:false, sortable:true, dataIndex:'Status', editor: new Ext.form.field.ComboBox({
         typeAhead: true,
         triggerAction: 'all',
         selectOnTab: true,
+        allowBlank:true,
         store: [
             ['0','0'],
             ['0.25','25%'],
             ['0.5','50%'],
             ['0.75','75%'],
-            ['1.00','Done'],
+            ['1.00','Done']
         ]
     })});
+
+
 
 
     /*GridPanel that displays the data*/
@@ -147,13 +160,41 @@ Ext.onReady(function () {
 //                clicksToEdit: 1
 //            })
 //        ],
-        plugins: [cellEditing],
+        plugins: [rowEditing],
         title:'Task Master',
         collapsible: false,
-        animCollapse: false
+        animCollapse: false,
+        dockedItems: [{
+            xtype: 'toolbar',
+            items: [{
+                text: 'Add',
+                icon: '/static/img/silk/add.png',
+                handler: function(){
+                    // empty record
+                    store.insert(0, new taskModel());
+                    rowEditing.startEdit(0, 0);
+                }
+            }, '-', {
+                itemId: 'delete',
+                text: 'Delete',
+                icon: '/static/img/silk/delete.png',
+                disabled: true,
+                handler: function(){
+                    var selection = taskMaster.grid.getView().getSelectionModel().getSelection()[0];
+                    if (selection) {
+                        store.remove(selection);
+                    }
+                }
+            }]
+        }]
 
     });
 
+    taskMaster.grid.columns[0].setVisible(false);
+
+    taskMaster.grid.getSelectionModel().on('selectionchange', function(selModel, selections){
+        taskMaster.grid.down('#delete').setDisabled(selections.length === 0);
+    });
 
     var button =  new Ext.Button({applyTo:'button-div',text:'Submit!', minWidth: 130, handler: taskMaster.submitHandler});
     var conn = new Ext.data.Connection();
