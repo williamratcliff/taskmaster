@@ -32,9 +32,24 @@ Ext.require([
 Ext.onReady(function () {
 
 
+
     //define a local namespace, so we don't pollute the global namespace.  We don't use all locals because we
     //may want to recycle this app later.
     Ext.namespace("taskMaster");
+
+    try {
+        taskMaster.csrfToken = Ext.select("meta[name='csrf-token']").elements[0].getAttribute('content');
+
+        // Ensure the Rails CSRF token is always sent
+        Ext.Ajax.on('beforerequest', function(o,r) {
+            r.headers = Ext.apply({
+                'Accept': 'application/json',
+                'X-CSRF-Token': taskMaster.csrfToken
+            }, r.headers || {});
+        });
+    } catch (e) {
+        // console.log('CSRF protection appears to be disabled');
+    }
 
    //register a new model with ExtJs
     Ext.define('taskModel', {
@@ -61,12 +76,12 @@ Ext.onReady(function () {
     //be multiple views on the data...
     var store = Ext.create('Ext.data.Store', {
             model:'taskModel',
-            data: myData,
+            //data: myData,
             autoLoad: true,
             autoSync: true,
             proxy: {
                 type: 'rest',
-                url: 'rest_api',
+                url: 'tasks',//rest_api',
                 reader: {
                     type: 'json',
                     root: 'data'
@@ -136,7 +151,7 @@ Ext.onReady(function () {
 
     gridColumns.push({header:'Start Date', width:120, sortable:true, dataIndex:'DateStarted', editor: {
         xtype: 'datefield',
-        allowBlank: false,
+        allowBlank: true,
         renderer: Ext.util.Format.dateRenderer('m d Y')
         //format: 'm d Y'
     }});
@@ -272,7 +287,7 @@ Ext.onReady(function () {
         //serialize the data in JSON format for transfer to the server.
         var data=Ext.JSON.encode(params);
         $.ajax({
-            url: '/rest_api',
+            url: 'tasks',//'/rest_api',
             type: 'POST',
             data: {'data' : data},
             success: function(response) {

@@ -25,6 +25,7 @@ urlpatterns = patterns('',
 		      (r'', include('registration.urls')),
 		      (r'^profiles/', include('profiles.urls')),
                       (r'^rest_api', 'mytasks.views.rest_api'),
+                      (r'^tasks/', 'mytasks.views.tasks'),
 		      (r'', 'mytasks.views.home'),
 
 
